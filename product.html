@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Product — Woodo</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+</head>
+<body data-page="product">
+
+  <nav class="nav-glass">
+    <div class="nav-inner">
+      <a href="index.html" class="logo">Wood<span>o</span></a>
+      <ul class="nav-links">
+  <li><a href="index.html" data-nav="home">Home</a></li>
+  <li><a href="shop.html" data-nav="shop">Shop</a></li>
+  <li><a href="index.html#categories" data-nav="categories">Categories</a></li>
+  <li><a href="index.html#story" data-nav="story">Our Story</a></li>
+</ul>
+      <div class="nav-actions">
+        <div class="nav-user">
+          <div class="nav-user-avatar"></div>
+          <span class="nav-user-name"></span>
+        </div>
+        <a href="cart.html" class="nav-icon" title="Cart">
+          <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <path d="M16 10a4 4 0 0 1-8 0"></path>
+          </svg>
+          <span class="cart-count" style="display:none;">0</span>
+        </a>
+        <div class="nav-auth-links">
+          <a href="login.html" class="btn btn-secondary btn-sm">Sign In</a>
+          <a href="signup.html" class="btn btn-primary btn-sm">Get Started</a>
+        </div>
+        <div class="mobile-menu-btn"><span></span><span></span><span></span></div>
+      </div>
+    </div>
+  </nav>
+
+  <section class="product-detail-section">
+    <div class="container">
+      <div class="product-detail-grid">
+        <div class="product-gallery">
+          <div class="product-gallery-main">
+            <img src="https://placehold.co/600x600/f5f0e8/5c4033?text=Woodo" alt="Product">
+          </div>
+          <div class="product-gallery-thumbs">
+            <img src="https://placehold.co/100x100/f5f0e8/5c4033?text=1" class="active" alt="Thumb 1">
+            <img src="https://placehold.co/100x100/f5f0e8/5c4033?text=2" alt="Thumb 2">
+            <img src="https://placehold.co/100x100/f5f0e8/5c4033?text=3" alt="Thumb 3">
+            <img src="https://placehold.co/100x100/f5f0e8/5c4033?text=4" alt="Thumb 4">
+          </div>
+        </div>
+
+        <div class="product-detail-info">
+          <div class="product-detail-category" style="color:var(--accent); font-weight:600; font-size:0.85rem; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:12px;">Artisan Product</div>
+          <h1 class="product-detail-title">Premium Product Name</h1>
+          <div class="product-detail-meta">
+            <div class="product-detail-price">৳0</div>
+            <div class="product-detail-rating">
+              <span>★★★★★</span>
+              <span style="color:var(--text-muted); font-size:0.9rem;">(24 reviews)</span>
+            </div>
+          </div>
+
+          <div class="product-detail-description">
+            <p>Handcrafted with premium materials for your creative space. This piece combines traditional craftsmanship with modern design sensibilities.</p>
+          </div>
+
+          <div class="product-options">
+            <div class="option-group">
+              <label>Size</label>
+              <div class="option-buttons">
+                <button class="option-btn active">Small</button>
+                <button class="option-btn">Medium</button>
+                <button class="option-btn">Large</button>
+              </div>
+            </div>
+            <div class="option-group">
+              <label>Quantity</label>
+              <div class="quantity-selector">
+                <button onclick="const el=document.querySelector('.qty-input'); el.value=Math.max(1,parseInt(el.value)-1)">−</button>
+                <input type="text" class="qty-input" value="1" readonly>
+                <button onclick="const el=document.querySelector('.qty-input'); el.value=parseInt(el.value)+1">+</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="product-detail-actions">
+            <button class="btn btn-primary btn-lg btn-buy-now" style="flex:1;">Buy Now via WhatsApp</button>
+            <button class="btn btn-secondary btn-lg btn-add-cart" style="flex:1;">Add to Cart</button>
+          </div>
+
+          <div class="product-pairs">
+            <h3>Pairs Well With</h3>
+            <div class="pairs-grid">
+              <div class="pair-card">
+                <img src="https://placehold.co/80x80/f5f0e8/5c4033?text=W" alt="Pair">
+                <div class="pair-card-info">
+                  <h4>Wooden easel</h4>
+                  <p>৳2,500</p>
+                </div>
+              </div>
+              <div class="pair-card">
+                <img src="https://placehold.co/80x80/f5f0e8/5c4033?text=W" alt="Pair">
+                <div class="pair-card-info">
+                  <h4>Paint Brush Set</h4>
+                  <p>৳850</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer" style="padding:40px 0;">
+    <div class="container">
+      <div class="footer-bottom" style="border:none; padding:0;">
+        <p> Woodo Atelier. All rights reserved.</p>
+        <p style="font-size:0.85rem; color:var(--text-muted);">Crafted with ♥ in Bangladesh</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
