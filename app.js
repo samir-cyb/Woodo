@@ -1219,10 +1219,176 @@ function editProduct(id) {
   form.productOldPrice.value = product.old_price || '';
   form.productStock.value = product.stock || '';
   form.productDescription.value = product.description || '';
-  form.productImage.value = product.image || '';
+
+  // Pre-fill image: switch to URL tab and show preview
+  const urlInput = $('#productImageUrl');
+  if (urlInput) urlInput.value = product.image || '';
+
+  // Switch to URL tab since existing products have a URL
+  const urlTab = document.querySelector('.img-tab[data-tab="url"]');
+  if (urlTab) switchImgTab(urlTab, 'url');
+
+  // Show image preview if there's an existing image
+  if (product.image) {
+    const preview = $('#imgPreview');
+    const previewWrap = $('#imgPreviewWrap');
+    if (preview) preview.src = product.image;
+    if (previewWrap) previewWrap.style.display = 'block';
+  }
 
   modal.classList.add('active');
 }
+
+// ============================================
+// IMAGE PICKER HELPERS
+// ============================================
+
+/** Switch between "file" and "url" tabs in the product modal */
+function switchImgTab(clickedBtn, tab) {
+  // Update tab button states
+  document.querySelectorAll('.img-tab').forEach(b => b.classList.remove('active'));
+  clickedBtn.classList.add('active');
+
+  // Show/hide panels
+  const filePanel = $('#imgPanelFile');
+  const urlPanel  = $('#imgPanelUrl');
+  if (filePanel) filePanel.style.display = tab === 'file' ? 'block' : 'none';
+  if (urlPanel)  urlPanel.style.display  = tab === 'url'  ? 'block' : 'none';
+
+  // When switching to URL tab and a URL is already typed, show preview
+  if (tab === 'url') {
+    const urlVal = ($('#productImageUrl') || {}).value || '';
+    if (urlVal) showImgPreview(urlVal);
+  }
+}
+
+/** Show image preview */
+function showImgPreview(src) {
+  const preview = $('#imgPreview');
+  const wrap    = $('#imgPreviewWrap');
+  if (!preview || !wrap) return;
+  preview.src = src;
+  wrap.style.display = 'block';
+}
+
+/** Clear the image preview and reset file input */
+function clearImgPreview() {
+  const preview  = $('#imgPreview');
+  const wrap     = $('#imgPreviewWrap');
+  const fileInput= $('#productImageFile');
+  const urlInput = $('#productImageUrl');
+  if (preview)   preview.src = '';
+  if (wrap)      wrap.style.display = 'none';
+  if (fileInput) fileInput.value = '';
+  if (urlInput)  urlInput.value = '';
+}
+
+/** Reset entire image picker to default state */
+function resetImagePicker() {
+  clearImgPreview();
+  // Switch back to file tab
+  const fileTab = document.querySelector('.img-tab[data-tab="file"]');
+  if (fileTab) switchImgTab(fileTab, 'file');
+}
+
+/** Wire up all image picker events (file change + drag-drop + URL live preview) */
+function setupImagePicker() {
+  const fileInput  = $('#productImageFile');
+  const dropZone   = $('#imgDropZone');
+  const urlInput   = $('#productImageUrl');
+
+  // --- File input change ---
+  if (fileInput) {
+    fileInput.addEventListener('change', () => {
+      const file = fileInput.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = e => showImgPreview(e.target.result);
+      reader.readAsDataURL(file);
+    });
+  }
+
+  // --- Drag & drop on drop zone ---
+  if (dropZone) {
+    dropZone.addEventListener('dragover', e => {
+      e.preventDefault();
+      dropZone.classList.add('drag-over');
+    });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+    dropZone.addEventListener('drop', e => {
+      e.preventDefault();
+      dropZone.classList.remove('drag-over');
+      const file = e.dataTransfer.files[0];
+      if (!file || !file.type.startsWith('image/')) {
+        showToast('Please drop an image file', 'warning');
+        return;
+      }
+      if (fileInput) {
+        // Assign file to input
+        const dt = new DataTransfer();
+        dt.items.add(file);
+        fileInput.files = dt.files;
+      }
+      const reader = new FileReader();
+      reader.onload = ev => showImgPreview(ev.target.result);
+      reader.readAsDataURL(file);
+    });
+  }
+
+  // --- URL input live preview on blur ---
+  if (urlInput) {
+    urlInput.addEventListener('blur', () => {
+      const val = urlInput.value.trim();
+      if (val) showImgPreview(val);
+      else clearImgPreview();
+    });
+  }
+}
+
+/** Convert a File to a base64 data-URL string */
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload  = e => resolve(e.target.result);
+    reader.onerror = () => reject(new Error('Failed to read file'));
+    reader.readAsDataURL(file);
+  });
+}
+
+/**
+ * Upload an image file to Supabase Storage bucket 'product-images'.
+ * Returns the public URL on success, or null if unavailable.
+ */
+async function uploadImageToSupabase(file) {
+  if (!supabaseClient) return null;
+  try {
+    const ext      = file.name.split('.').pop();
+    const fileName = `${generateId()}.${ext}`;
+    const { data, error } = await supabaseClient
+      .storage
+      .from('product-images')
+      .upload(fileName, file, { cacheControl: '3600', upsert: false });
+
+    if (error) {
+      debugLog('IMAGE', 'Supabase storage upload failed', error.message);
+      return null;
+    }
+
+    const { data: urlData } = supabaseClient
+      .storage
+      .from('product-images')
+      .getPublicUrl(fileName);
+
+    return urlData?.publicUrl || null;
+  } catch (e) {
+    debugLog('IMAGE', 'Exception during image upload', e.message);
+    return null;
+  }
+}
+
+// Expose image picker helpers for inline onclick handlers
+window.switchImgTab    = switchImgTab;
+window.clearImgPreview = clearImgPreview;
 
 // ============================================
 // GSAP ANIMATIONS
@@ -1504,9 +1670,40 @@ async function initAdmin() {
 
   const productForm = $('#productForm');
   if (productForm) {
+    // Setup image picker interactions
+    setupImagePicker();
+
     productForm.addEventListener('submit', async (e) => {
       e.preventDefault();
+      const btn = productForm.querySelector('button[type="submit"]');
+      const originalText = btn.innerHTML;
+      btn.innerHTML = '<div class="spinner" style="width:20px;height:20px;border-width:2px;"></div> Saving...';
+      btn.disabled = true;
+
       const editId = productForm.dataset.editId;
+
+      // --- Resolve final image URL ---
+      let imageUrl = 'https://placehold.co/400x400/f5f0e8/5c4033?text=Woodo';
+      const fileInput = $('#productImageFile');
+      const urlInput = $('#productImageUrl');
+      const activeTab = $('.img-tab.active');
+      const isFileTab = activeTab && activeTab.dataset.tab === 'file';
+
+      if (isFileTab && fileInput && fileInput.files && fileInput.files[0]) {
+        // Try Supabase Storage first, fallback to base64
+        const file = fileInput.files[0];
+        if (file.size > 5 * 1024 * 1024) {
+          showToast('Image must be under 5MB', 'error');
+          btn.innerHTML = originalText;
+          btn.disabled = false;
+          return;
+        }
+        const uploadedUrl = await uploadImageToSupabase(file);
+        imageUrl = uploadedUrl || await fileToBase64(file);
+      } else if (urlInput && urlInput.value.trim()) {
+        imageUrl = urlInput.value.trim();
+      }
+
       const productData = {
         name: productForm.productName.value,
         category: productForm.productCategory.value,
@@ -1514,7 +1711,7 @@ async function initAdmin() {
         old_price: productForm.productOldPrice.value ? parseFloat(productForm.productOldPrice.value) : null,
         stock: parseInt(productForm.productStock.value) || 0,
         description: productForm.productDescription.value,
-        image: productForm.productImage.value || 'https://placehold.co/400x400/f5f0e8/5c4033?text=Woodo ',
+        image: imageUrl,
         rating: 4.8
       };
 
@@ -1526,6 +1723,9 @@ async function initAdmin() {
       }
 
       productForm.reset();
+      resetImagePicker();
+      btn.innerHTML = originalText;
+      btn.disabled = false;
       const modal = $('.modal-overlay');
       if (modal) modal.classList.remove('active');
       loadAdminProducts();
@@ -1554,16 +1754,28 @@ async function initAdmin() {
 
   modalOpenBtn?.addEventListener('click', () => {
     const form = $('#productForm');
-    if (form) form.dataset.editId = '';
+    if (form) {
+      form.dataset.editId = '';
+      form.reset();
+    }
+    resetImagePicker();
     if (modalOverlay) modalOverlay.classList.add('active');
   });
 
   modalCloseBtn?.addEventListener('click', () => {
     if (modalOverlay) modalOverlay.classList.remove('active');
+    resetImagePicker();
+    const form = $('#productForm');
+    if (form) form.reset();
   });
 
   modalOverlay?.addEventListener('click', (e) => {
-    if (e.target === modalOverlay) modalOverlay.classList.remove('active');
+    if (e.target === modalOverlay) {
+      modalOverlay.classList.remove('active');
+      resetImagePicker();
+      const form = $('#productForm');
+      if (form) form.reset();
+    }
   });
   
   debugLog('ADMIN', '========== initAdmin END ==========');

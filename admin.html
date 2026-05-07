@@ -217,8 +217,28 @@
           <input type="number" name="productStock" class="form-input" placeholder="0" min="0">
         </div>
         <div class="form-group">
-          <label>Image URL</label>
-          <input type="url" name="productImage" class="form-input" placeholder="https://example.com/image.jpg">
+          <label>Product Image</label>
+          <div class="img-picker-tabs">
+            <button type="button" class="img-tab active" data-tab="file" onclick="switchImgTab(this,'file')">📁 Browse from Device</button>
+            <button type="button" class="img-tab" data-tab="url" onclick="switchImgTab(this,'url')">🔗 Paste URL</button>
+          </div>
+          <div class="img-picker-file img-picker-panel active" id="imgPanelFile">
+            <label class="img-drop-zone" id="imgDropZone" for="productImageFile">
+              <div class="img-drop-icon">📷</div>
+              <div class="img-drop-text">
+                <strong>Click to browse</strong> or drag & drop
+                <span>JPG, PNG, WEBP up to 5MB</span>
+              </div>
+              <input type="file" id="productImageFile" name="productImageFile" accept="image/*" style="display:none;">
+            </label>
+          </div>
+          <div class="img-picker-url img-picker-panel" id="imgPanelUrl" style="display:none;">
+            <input type="url" name="productImage" id="productImageUrl" class="form-input" placeholder="https://example.com/image.jpg">
+          </div>
+          <div class="img-preview-wrap" id="imgPreviewWrap" style="display:none;">
+            <img id="imgPreview" src="" alt="Preview">
+            <button type="button" class="img-preview-remove" onclick="clearImgPreview()">✕ Remove</button>
+          </div>
         </div>
         <div class="form-group">
           <label>Description</label>
